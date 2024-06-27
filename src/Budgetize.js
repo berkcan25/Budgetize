@@ -1,7 +1,7 @@
 import logo from './logo.svg';
 import './App.css';
 
-function App() {
+function Budgetize() {
   return (
     <div className="budgetize">
     <nav className="bg-gray-800 p-4">
@@ -36,4 +36,4 @@ function App() {
   );
 }
 
-export default App;
+export default Budgetize;

@@ -3,6 +3,7 @@ import { Map, Marker, Popup, NavigationControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import logo from './logo.svg';
 import './App.css';
+import walmart from 'walmart-api-wrapper'
 
 function Budgetize() {
   const [address, setAddress] = useState('');

@@ -1,9 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Map, Marker, Popup, NavigationControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import logo from './logo.svg';
 import './App.css';
-import walmart from 'walmart-api-wrapper'
+import axios from 'axios';
 
 function Budgetize() {
   const [address, setAddress] = useState('');
@@ -14,7 +14,13 @@ function Budgetize() {
   });
   const [marker, setMarker] = useState(null);
   const mapRef = useRef(null);
+  const BACKEND_API_URL = "http://localhost:9000/"
+  const [walmartLocs, setWalmartLocs] = useState(null);
+  const [item, setItem] = useState(null);
+  const [itemID, setItemID] = useState(null);
 
+
+  //Mapbox API
   const fly = (longitude, latitude) => {
     if (mapRef.current) {
       console.log(mapRef.current)
@@ -28,6 +34,10 @@ function Budgetize() {
 
   const handleAddressChange = (event) => {
     setAddress(event.target.value);
+  };
+
+  const handleItemChange = (event) => {
+    setItem(event.target.value);
   };
 
   const handleGeocode = async (event) => {
@@ -46,6 +56,74 @@ function Budgetize() {
     } catch (error) {
       console.error('Failed to geocode the address:', error);
     }
+  };
+
+  //Walmart API
+
+  //Get Walmart locations  
+  useEffect(() => {
+    const postLocation = async () => {
+      try {
+        const response = await axios.post(BACKEND_API_URL +'location', {
+          latitude: location.latitude,
+          longitude: location.longitude,
+        });
+        setWalmartLocs(response.data)
+        // walmartLocs.map((loc) => {
+        //     console.log(loc.no);
+        //     console.log(loc.coordinates[1]);
+        //     console.log(loc.coordinates[0]);
+        // });
+        console.log('Location posted successfully:', response.data);
+      } catch (error) {
+        console.error('Error posting location:', error);
+      }
+    };
+
+    if (location.latitude && location.longitude) {
+      postLocation();
+    }
+  }, [location.latitude, location.longitude]);
+
+  const handleItem = async (event) => {
+    event.preventDefault();
+    try {
+      const response = await axios.post(BACKEND_API_URL +'item', {
+        query: item
+      });
+      setItemID(response.data.items[0].itemId)
+      console.log('ItemID posted successfully:', response.data.items[0].itemId);
+      getPrices(response.data.items[0].itemId)
+    } catch (error) {
+      console.error('Error posting ItemID:', error);
+    }
+  };
+
+  const getPrices = async (id) => {
+
+    try {
+      for (const loc of walmartLocs) {
+        const response = await axios.post(BACKEND_API_URL + 'price', {
+          itemID: id,
+          location: loc.no
+        });
+        console.log(loc.name)
+        console.log(response.data.salePrice); // Handle the response data as needed
+        setWalmartLocs((prevLocs) =>
+          prevLocs.map((l) => {
+            if (l.no === loc.no) {
+              // console.log({ ...l, salePrice: response.data.salePrice });
+              return { ...l, salePrice: response.data.salePrice };
+            } else {
+              return l;
+            }
+          })
+        );
+      }
+    } catch (error) {
+      console.error('Error fetching prices:', error);
+    }
+    // console.log(walmartLocs);
   };
 
   return (
@@ -77,10 +155,11 @@ function Budgetize() {
             </button>
           </form>
           {/* Centered search input field */}
-          <form className='flex'>
+          <form className='flex' onSubmit={handleItem}>
             <input
               type="text"
               placeholder="Search for items..."
+              onChange={handleItemChange}
               className="p-2 bg-blue focus:outline-none rounded-l focus:ring-2 focus:ring-blue-500 w-full max-w-xs"
             />
             <button
@@ -120,25 +199,18 @@ function Budgetize() {
             mapboxAccessToken={process.env.REACT_APP_MAPBOX_ACCESS_TOKEN}
             onLoad={({ target }) => { mapRef.current = target; }}
           >
-            {marker && (
-              <Marker longitude={marker.longitude} latitude={marker.latitude}>
-                <svg display="block" height="41px" width="27px" viewBox="0 0 27 41">
-                  <defs>
-                    <radialGradient id="shadowGradient">
-                      <stop offset="10%" stop-opacity="0.4"></stop>
-                      <stop offset="100%" stop-opacity="0.05"></stop>
-                    </radialGradient>
-                  </defs>
-                  <ellipse cx="13.5" cy="34.8" rx="10.5" ry="5.25" fill="url(#shadowGradient)">
-                  </ellipse>
-                  <path fill="red" d="M27,13.5C27,19.07 20.25,27 14.75,34.5C14.02,35.5 12.98,35.5 12.25,34.5C6.75,27 0,19.22 0,13.5C0,6.04 6.04,0 13.5,0C20.96,0 27,6.04 27,13.5Z">
-                  </path>
-                  <path opacity="0.25" d="M13.5,0C6.04,0 0,6.04 0,13.5C0,19.22 6.75,27 12.25,34.5C13,35.52 14.02,35.5 14.75,34.5C20.25,27 27,19.07 27,13.5C27,6.04 20.96,0 13.5,0ZM13.5,1C20.42,1 26,6.58 26,13.5C26,15.9 24.5,19.18 22.22,22.74C19.95,26.3 16.71,30.14 13.94,33.91C13.74,34.18 13.61,34.32 13.5,34.44C13.39,34.32 13.26,34.18 13.06,33.91C10.28,30.13 7.41,26.31 5.02,22.77C2.62,19.23 1,15.95 1,13.5C1,6.58 6.58,1 13.5,1Z"></path>
-                  <path d="M7 11 L13.5 6 L20 11 L20 20 L7 20 Z" fill="white"/>
-                                  </svg>
-              </Marker>
-
-            )}
+          {walmartLocs && walmartLocs.map((loc) => (
+          <Marker
+            // key={loc.no}
+            longitude={loc.coordinates[0]}
+            latitude={loc.coordinates[1]}
+          >
+            {loc.salePrice && <div className="bg-white p-2 rounded shadow">
+              {loc.salePrice}
+            </div>}
+          </Marker>
+          ))}
+          {/* {marker && <Marker longitude={marker.longitude} latitude={marker.latitude}></Marker>} */}
             <NavigationControl position="top-right" />
           </Map>
         </div>

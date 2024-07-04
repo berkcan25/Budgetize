@@ -1,23 +1,40 @@
 const walmart = require('walmart-api-wrapper');
 const NodeRSA = require("node-rsa");
+const axios = require('axios');
 
+//Express Setup
+const express = require("express");
+const app = express();
+const cors = require('cors');
+app.use(cors());
+app.use(express.json());
+const PORT = process.env.PORT || 9000;
+
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+
+app.get("/message", (req, res) => {
+    res.json({ message: "Hello from server!" });
+});
 
 //Walmart API Requirements
 
-const BASE_URL = 'https://developer.api.walmart.com';
+const BASE_URL = 'https://developer.api.walmart.com/';
 const MAX = 200;
 
 const fetchBody = async (url, headerData) => {
-    let res = await fetch(
-        url,
-        {
-            method: 'GET',
+    try {
+        const response = await axios.get(url, {
             headers: generateHeaders(headerData)
-        }
-    )
-
-    return (await res).json();
-}
+        });
+        // console.log(response)
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching data:', error.response ? error.response.data : error.message);
+        throw error;
+    }
+};
 
 const generateHeaders = (headerData) => {
     const { privateKey, consumerId, keyVer } = headerData;
@@ -45,27 +62,67 @@ const getNumToRetrieve = (numRetrieved, requiredAmount) => {
 
 
 //Step 1: Find and send specific locations requested
-const productsSpecific = async (headerData, numProducts) => {
-    // let url = BASE_URL + `/api-proxy/service/affil/product/v2/stores?lat=37.689560&lon=-122.130836`
-    let url = BASE_URL + `/api-proxy/service/affil/product/v2/items/11979182?storeId=2941`
 
-    // 11979182
-    //2941
+app.post("/location", async (req, res) => {
+    let latitude = req.body.latitude;
+    let longitude = req.body.longitude;
+    console.log(longitude);
+    console.log(latitude);
+    let url = BASE_URL + `api-proxy/service/affil/product/v2/stores?lon=${longitude}&lat=${latitude}`;
+    console.log(url);
+    try {
+        let response = await fetchBody(url, headerData);
+        console.log(response);
+        res.json(response);
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching location data' });
+    }
+})
 
-    //5434
-    let products = []
-    do {
+//Step 2: Find item ID numbers
+app.post("/item", async (req, res) => {
+    let query = req.body.query;
+    let url = BASE_URL + `api-proxy/service/affil/product/v2/search?query=${query}`;
+    console.log(url);
+    try {
+        let response = await fetchBody(url, headerData);
+        console.log(response);
+        res.json(response);
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching itemID data' });
+    }
+})
 
-        let res = await fetchBody(url, headerData);
-        console.log(res);
-        products.push(...res.items);
+//Step 3: Use locations to find specific prices of items
+app.post("/price", async (req, res) => {
+    let itemID = req.body.itemID;
+    let location = req.body.location;
+    let url = BASE_URL + `api-proxy/service/affil/product/v2/items/${itemID}?storeId=${location}`;
+    console.log(url);
+    try {
+        let response = await fetchBody(url, headerData);
+        console.log(response);
+        res.json(response);
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching location data' });
+    }
+})
 
-        if (!res.nextPageExist) break;
-        url = BASE_URL + res.nextPage.replace(/&count=([0-9]+)&/g, `&count=${String(getNumToRetrieve(products.length, numProducts))}&`);
-    } while (!numProducts || (products.length < numProducts));
+// const productsSpecific = async (headerData, numProducts) => {
+//     // let url = BASE_URL + `/api-proxy/service/affil/product/v2/stores?lat=37.689560&lon=-122.130836`
+//     let url = BASE_URL + `api-proxy/service/affil/product/v2/items/11979182?storeId=2941`
 
-    return products;    
-}
+//     // 11979182
+//     //2941
+
+//     //5434
+
+//         let res = await fetchBody(url, headerData);
+//         console.log(res);
+
+
+//     return res;    
+// }
 
 const headerData = {
     privateKey: `-----BEGIN PRIVATE KEY-----
@@ -99,16 +156,19 @@ const headerData = {
     consumerId: '76d4c2ce-1714-4d9b-86a6-bee4987fa99d',
     keyVer: '1'
 }
-async function saveProducts() {
-    try {
-        const savethis = await productsSpecific(headerData, 1);
-        const savethis3 = await walmart.stores(headerData, -84.387985, 33.748997);
-        // const savethis2 = await walmart.taxonomy(headerData);
-        // console.log(savethis2);
-        console.log("Products saved:", savethis);
-    } catch (error) {
-        console.error("Error saving products:", error);
-    }
-}
+// async function saveProducts() {
+//     try {
+//             let url = BASE_URL + `api-proxy/service/affil/product/v2/items/11979182?storeId=2941`
+//     // 11979182
+//     //2941
+//     //5434
+//         let res = await fetchBody(url, headerData);
+//         console.log(res);
 
-saveProducts();
+//         // console.log("Products saved:", res);
+//     } catch (error) {
+//         console.error("Error saving products:", error);
+//     }
+// }
+
+// saveProducts();

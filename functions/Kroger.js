@@ -27,7 +27,6 @@ const scopes = {
 function generateAuthPayloadHeaders(scope) {
     // console.log(`${CLIENTID}:${CLIENTSECRET}`)
     const key = btoa(`${CLIENTID}:${CLIENTSECRET}`)
-    // console.log(key)
     const headers = {
         "Content-Type": "application/x-www-form-urlencoded",
         "Authorization": `Basic ${key}`
@@ -36,7 +35,7 @@ function generateAuthPayloadHeaders(scope) {
     if (scope !== "Location") {
         payload = new URLSearchParams({
             grant_type: "client_credentials",
-            scope: scope
+            scope: scopes[scope]
         })
     } else {
         payload = new URLSearchParams({
@@ -68,13 +67,10 @@ krogerRouter.post("/getKrogerToken", async (req, res) => {
 });
 
 krogerRouter.post("/getKrogerLocs", async (req, res) => {
-    console.log(req.body.locKey);
     const headers = {
         "Accept":"application/json",
         "Authorization":`Bearer ${req.body.locKey}`
     }
-    console.log(headers)
-    // const payload = new URLSearchParams({"filter.latLong.near":req.body.latLong})
     try {
         const response = await fetch(`https://api.kroger.com/v1/locations?filter.latLong.near=${req.body.latLong}`, {
             method: 'GET',
@@ -89,6 +85,51 @@ krogerRouter.post("/getKrogerLocs", async (req, res) => {
         console.error('Failed to get access token:', error);
         res.status(500).json({ error: error.message });
     }
+})
+
+krogerRouter.post("/getKrogerItem", async (req, res) => {
+    const headers = {
+        "Accept":"application/json",
+        "Authorization":`Bearer ${req.body.key}`
+    }
+    try {
+        const response = await fetch(`https://api.kroger.com/v1/products?filter.term=${req.body.item}`, {
+            method: 'GET',
+            headers: headers,
+        });
+        if (!response.ok) {
+            throw new Error(`Error: ${response.status} - ${response.statusText}`);
+        }
+        const data = await response.json()
+        res.json(data.data);
+    } catch (error) {
+        console.error('Failed to get access token:', error);
+        res.status(500).json({ error: error.message });
+    }
+
+})
+
+krogerRouter.post("/getKrogerPrice", async (req, res) => {
+    const headers = {
+        "Accept":"application/json",
+        "Authorization":`Bearer ${req.body.key}`
+    }
+    try {
+        const response = await fetch(`https://api.kroger.com/v1/products?filter.locationId=${req.body.locationID}&filter.productId=${req.body.itemID}`, {
+            method: 'GET',
+            headers: headers,
+        });
+        if (!response.ok) {
+            throw new Error(`Error: ${response.status} - ${response.statusText}`);
+        }
+        const data = await response.json()
+        console.log(data)
+        res.json(data.data);
+    } catch (error) {
+        console.error('Failed to get access token:', error);
+        res.status(500).json({ error: error.message });
+    }
+
 })
 
 module.exports = krogerRouter;

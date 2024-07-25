@@ -11,8 +11,11 @@ const URL = "https://api.kroger.com/v1"
 const AUTH_URL = "https://api.kroger.com/v1/connect/oauth2/token"
 const LOC_URL = "https://api.kroger.com/v1/locations"
 
-const CLIENTID = process.env.KROGER_API_CLIENT_ID
-const CLIENTSECRET = process.env.KROGER_API_CLIENT_SECRET
+// const CLIENTID = process.env.KROGER_API_CLIENT_ID
+// const CLIENTSECRET = process.env.KROGER_API_CLIENT_SECRET
+
+const CLIENTID = "budgetize-ffa07e567c5d53923ee3d9d6cf9f617d4740238017845917698"
+const CLIENTSECRET = "14A80ucnF8a8Vecb6IClTNz1S8GX8nz5cEbNSBxk"
 
 const scopes = {
     "Cart":"cart.basic:write",
@@ -21,8 +24,9 @@ const scopes = {
 }
 
 function generateAuthPayloadHeaders(scope) {
+    // console.log(`${CLIENTID}:${CLIENTSECRET}`)
     const key = btoa(`${CLIENTID}:${CLIENTSECRET}`)
-    console.log(key)
+    // console.log(key)
     const headers = {
         "Content-Type": "application/x-www-form-urlencoded",
         "Authorization": `Basic ${key}`
@@ -44,7 +48,7 @@ function generateAuthPayloadHeaders(scope) {
 krogerRouter.post("/getKrogerToken", async (req, res) => {
     let scope = req.body.scope;
     parameters = generateAuthPayloadHeaders(scope);
-    console.log(parameters)
+    // console.log(parameters)
     try {
         const response = await fetch('https://api.kroger.com/v1/connect/oauth2/token', {
             method: 'POST',
@@ -54,7 +58,6 @@ krogerRouter.post("/getKrogerToken", async (req, res) => {
         if (!response.ok) {
             throw new Error(`Error: ${response.status} - ${response.statusText}`);
         }
-        console.log(response.json());
         const data = await response.json();
         res.json({ accessToken: data.access_token });
     } catch (error) {
@@ -63,22 +66,24 @@ krogerRouter.post("/getKrogerToken", async (req, res) => {
     }
 });
 
-krogerRouter.get("/getKrogerLocs", async (req, res) => {
+krogerRouter.post("/getKrogerLocs", async (req, res) => {
+    console.log(req.body.locKey);
     const headers = {
         "Accept":"application/json",
         "Authorization":`Bearer ${req.body.locKey}`
     }
-    const payload = new URLSearchParams({"filter.latLong.near":req.body.latLong})
+    console.log(headers)
+    // const payload = new URLSearchParams({"filter.latLong.near":req.body.latLong})
     try {
-        const response = await fetch('https://api.kroger.com/v1/locations', {
+        const response = await fetch(`https://api.kroger.com/v1/locations?filter.latLong.near=${req.body.latLong}`, {
             method: 'GET',
             headers: headers,
-            body: payload
         });
         if (!response.ok) {
             throw new Error(`Error: ${response.status} - ${response.statusText}`);
         }
-        console.log(response.json());
+        const data = await response.json()
+        console.log(data[0].geolocation);
         res.json(response);
     } catch (error) {
         console.error('Failed to get access token:', error);

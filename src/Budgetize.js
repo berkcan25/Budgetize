@@ -4,6 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import logo from './logo.svg';
 import './App.css';
 import axios from 'axios';
+import { SettingsApi_UpdateShippingTemplateRequestRateModelTypeEnum } from '@whitebox-co/walmart-marketplace-api';
 
 function Budgetize() {
   const [address, setAddress] = useState('');
@@ -26,6 +27,9 @@ function Budgetize() {
   const [walmartMSRP, setWalmartMSRP] = useState(null);
   const [selectedLoc, setSelectedLoc] = useState(null);
 
+
+  //Kroger API
+  const [krogerLocs, setKrogerLocs] = useState(null);
 
 
   //Mapbox API
@@ -66,9 +70,34 @@ function Budgetize() {
     }
   };
 
+ //Kroger API
+
+  //Get Kroger Locations
+  useEffect(() => {
+    const postKrogerLocs = async () => {
+      try {
+        const response = await axios.post(BACKEND_API_URL + 'kroger/getKrogerToken', {
+          scope: "Location"
+        });
+        console.log(response.data.accessToken)
+        const responseLocs = await axios.post(BACKEND_API_URL + 'kroger/getKrogerLocs', {
+          locKey: response.data.accessToken,
+          latLong: `${location.latitude},${location.longitude}`
+        });
+        console.log(responseLocs)
+        setKrogerLocs(responseLocs.data)
+        console.log('Location posted successfully:', responseLocs.data); 
+      } catch (error) {
+        console.error('Error posting location:', error); 
+      }
+    }
+    if (location.latitude && location.longitude) {
+      postKrogerLocs();
+    }}, [location.latitude, location.longitude]);
+
   //Walmart API
 
-  //Get Walmart locations  
+  //Get Walmart locations
   useEffect(() => {
     const postLocation = async () => {
       try {
@@ -240,6 +269,16 @@ function Budgetize() {
           </Popup>
         )}
         </Marker>
+          ))}
+          {/* kroger pins */}
+          {krogerLocs && krogerLocs.map((loc) => (
+          <Marker
+            // key={loc.no}
+            color='red'
+            latitude={loc.geolocation.latitude}
+            longitude={loc.geolocation.longitude}
+          >
+          </Marker>
           ))}
             <NavigationControl position="top-right" />
           </Map>

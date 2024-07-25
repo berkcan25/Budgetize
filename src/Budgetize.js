@@ -22,14 +22,16 @@ function Budgetize() {
   const [walmartLocs, setWalmartLocs] = useState(null);
   const [item, setItem] = useState(null);
   const [itemID, setItemID] = useState(null);
-  const [walmartImage, setWalmartImage] = useState(null);
-  const [walmartName, setWalmartName] = useState(null);
+  const [walmartImage, setWalmartImage] = useState([]);
+  const [walmartName, setWalmartName] = useState([]);
   const [walmartMSRP, setWalmartMSRP] = useState(null);
   const [selectedLoc, setSelectedLoc] = useState(null);
 
 
   //Kroger API
   const [krogerLocs, setKrogerLocs] = useState(null);
+  const [krogerSelectedLoc, setKrogerSelectedLoc] = useState(null);
+
 
 
   //Mapbox API
@@ -129,8 +131,8 @@ function Budgetize() {
         query: item
       });
       setItemID(response.data.items[0].itemId)
-      setWalmartImage(response.data.items[0].largeImage)
-      setWalmartName(response.data.items[0].name)
+      setWalmartImage(prevItems => [...prevItems, response.data.items[0].largeImage])
+      setWalmartName(prevItems => [...prevItems, response.data.items[0].name])
       console.log('ItemID posted successfully:', response.data.items[0].itemId);
       getPrices(response.data.items[0].itemId)
     } catch (error) {
@@ -270,6 +272,7 @@ function Budgetize() {
         )}
         </Marker>
           ))}
+
           {/* kroger pins */}
           {krogerLocs && krogerLocs.map((loc) => (
           <Marker
@@ -277,20 +280,44 @@ function Budgetize() {
             color='red'
             latitude={loc.geolocation.latitude}
             longitude={loc.geolocation.longitude}
+            onClick={() => setKrogerSelectedLoc(loc)}
+            style={{ zIndex: 1 }}
           >
+              {krogerSelectedLoc && (
+              <Popup
+              longitude={krogerSelectedLoc.geolocation.longitude}
+              latitude={krogerSelectedLoc.geolocation.latitude}
+              onClose={() => setKrogerSelectedLoc(null)}
+              closeOnClick={false}
+              anchor="top"
+              style={{ zIndex: 50, backgroundColor: 'white', borderRadius: '15px', border: 'none', boxShadow: 'none', padding: '5px'}}
+            >
+              <div>
+                <h2 className="font-bold">{krogerSelectedLoc.name}</h2>
+                <p>{krogerSelectedLoc.address.addressLine1}</p>
+                <p>{krogerSelectedLoc.address.city}, {krogerSelectedLoc.address.state} {krogerSelectedLoc.address.zipCode}</p>
+                <p>{krogerSelectedLoc.phone}</p>
+                {/* {selectedLoc.salePrice && <p className="italic">Price: {selectedLoc.salePrice}</p>} */}
+              </div>
+            </Popup>
+            )}
           </Marker>
           ))}
             <NavigationControl position="top-right" />
           </Map>
         </div>
-        {walmartImage && walmartName && (
-          <div className="fixed bottom-0 left-0 m-4 bg-white p-4 rounded shadow z-50">
-          <img src={walmartImage} alt="Walmart" className="w-32 h-32 object-contain mb-2" />
-          <p className="text-gray-800 font-semibold break-words w-32 text-center">
-            {walmartName}
-          </p>
+        {walmartImage.length > 0 && walmartName.length > 0 && (
+        <div className="fixed bottom-0 left-0 m-4 p-4 rounded z-50 flex flex-wrap">
+          {walmartImage.map((image, index) => (
+            <div key={index} className="w-32 p-4 m-2 bg-white shadow flex flex-col items-center">
+              <img src={image} alt={walmartName[index]} className="w-32 h-32 object-contain mb-2" />
+              <p className="text-gray-800 font-semibold break-words text-center">
+                {walmartName[index]}
+              </p>
+            </div>
+          ))}
         </div>
-        )}
+      )}
       </div>
     </div>
   );

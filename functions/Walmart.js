@@ -2,19 +2,13 @@ const walmart = require('walmart-api-wrapper');
 const NodeRSA = require("node-rsa");
 const axios = require('axios');
 
-//Express Setup
+// //Express Setup
 const express = require("express");
-const app = express();
-const cors = require('cors');
-app.use(cors());
-app.use(express.json());
-const PORT = process.env.PORT || 9000;
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+const router = express.Router();
 
-app.get("/message", (req, res) => {
+
+router.get("/message", (req, res) => {
     res.json({ message: "Hello from server!" });
 });
 
@@ -63,7 +57,7 @@ const getNumToRetrieve = (numRetrieved, requiredAmount) => {
 
 //Step 1: Find and send specific locations requested
 
-app.post("/location", async (req, res) => {
+router.post("/location", async (req, res) => {
     let latitude = req.body.latitude;
     let longitude = req.body.longitude;
     console.log(longitude);
@@ -80,7 +74,7 @@ app.post("/location", async (req, res) => {
 })
 
 //Step 2: Find item ID numbers
-app.post("/item", async (req, res) => {
+router.post("/item", async (req, res) => {
     let query = req.body.query;
     let url = BASE_URL + `api-proxy/service/affil/product/v2/search?query=${query}`;
     console.log(url);
@@ -94,14 +88,14 @@ app.post("/item", async (req, res) => {
 })
 
 //Step 3: Use locations to find specific prices of items
-app.post("/price", async (req, res) => {
+router.post("/price", async (req, res) => {
     let itemID = req.body.itemID;
     let location = req.body.location;
     let url = BASE_URL + `api-proxy/service/affil/product/v2/items/${itemID}?storeId=${location}`;
     console.log(url);
     try {
         let response = await fetchBody(url, headerData);
-        console.log(response);
+        // console.log(response);
         res.json(response);
     } catch (error) {
         res.status(500).json({ error: 'Error fetching location data' });
@@ -156,6 +150,9 @@ const headerData = {
     consumerId: '76d4c2ce-1714-4d9b-86a6-bee4987fa99d',
     keyVer: '1'
 }
+
+module.exports = router; // Ensure this is correct
+
 // async function saveProducts() {
 //     try {
 //             let url = BASE_URL + `api-proxy/service/affil/product/v2/items/11979182?storeId=2941`

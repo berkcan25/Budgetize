@@ -84,7 +84,7 @@ function Budgetize() {
           locKey: response.data.accessToken,
           latLong: `${location.latitude},${location.longitude}`
         });
-        console.log(responseLocs)
+        console.log(responseLocs.data)
         setKrogerLocs(responseLocs.data)
         console.log('Location posted successfully:', responseLocs.data); 
       } catch (error) {

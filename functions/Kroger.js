@@ -84,8 +84,7 @@ krogerRouter.post("/getKrogerLocs", async (req, res) => {
             throw new Error(`Error: ${response.status} - ${response.statusText}`);
         }
         const data = await response.json()
-        console.log(data[0].geolocation);
-        res.json(response);
+        res.json(data.data);
     } catch (error) {
         console.error('Failed to get access token:', error);
         res.status(500).json({ error: error.message });

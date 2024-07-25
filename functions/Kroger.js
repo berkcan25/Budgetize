@@ -1,5 +1,6 @@
 const express = require('express');
 const axios = require('axios');
+require('dotenv').config()
 
 const krogerRouter = express.Router();
 
@@ -11,11 +12,11 @@ const URL = "https://api.kroger.com/v1"
 const AUTH_URL = "https://api.kroger.com/v1/connect/oauth2/token"
 const LOC_URL = "https://api.kroger.com/v1/locations"
 
-// const CLIENTID = process.env.KROGER_API_CLIENT_ID
-// const CLIENTSECRET = process.env.KROGER_API_CLIENT_SECRET
+const CLIENTID = process.env.KROGER_API_CLIENT_ID
+const CLIENTSECRET = process.env.KROGER_API_CLIENT_SECRET
 
-const CLIENTID = "budgetize-ffa07e567c5d53923ee3d9d6cf9f617d4740238017845917698"
-const CLIENTSECRET = "14A80ucnF8a8Vecb6IClTNz1S8GX8nz5cEbNSBxk"
+// const CLIENTID = "budgetize-ffa07e567c5d53923ee3d9d6cf9f617d4740238017845917698"
+// const CLIENTSECRET = "14A80ucnF8a8Vecb6IClTNz1S8GX8nz5cEbNSBxk"
 
 const scopes = {
     "Cart":"cart.basic:write",

@@ -91,7 +91,7 @@ function Budgetize() {
         console.error('Error posting location:', error); 
       }
     }
-    if (location.latitude && location.longitude) {  
+    if (location.latitude && location.longitude) {
       postKrogerLocs();
     }}, [location.latitude, location.longitude]);
 
@@ -270,7 +270,7 @@ function Budgetize() {
         </Marker>
           ))}
           {/* kroger pins */}
-          {/* {krogerLocs && krogerLocs.map((loc) => (
+          {krogerLocs && krogerLocs.map((loc) => (
           <Marker
             // key={loc.no}
             color='red'
@@ -278,7 +278,7 @@ function Budgetize() {
             longitude={loc.geolocation.longitude}
           >
           </Marker>
-          ))} */}
+          ))}
             <NavigationControl position="top-right" />
           </Map>
         </div>

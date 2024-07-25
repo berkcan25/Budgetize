@@ -5,10 +5,10 @@ const axios = require('axios');
 // //Express Setup
 const express = require("express");
 
-const router = express.Router();
+const walmartRouter = express.Router();
 
 
-router.get("/message", (req, res) => {
+walmartRouter.get("/message", (req, res) => {
     res.json({ message: "Hello from server!" });
 });
 
@@ -57,16 +57,16 @@ const getNumToRetrieve = (numRetrieved, requiredAmount) => {
 
 //Step 1: Find and send specific locations requested
 
-router.post("/location", async (req, res) => {
+walmartRouter.post("/location", async (req, res) => {
     let latitude = req.body.latitude;
     let longitude = req.body.longitude;
-    console.log(longitude);
-    console.log(latitude);
+    // console.log(longitude);
+    // console.log(latitude);
     let url = BASE_URL + `api-proxy/service/affil/product/v2/stores?lon=${longitude}&lat=${latitude}`;
-    console.log(url);
+    // console.log(url);
     try {
         let response = await fetchBody(url, headerData);
-        console.log(response);
+        // console.log(response);
         res.json(response);
     } catch (error) {
         res.status(500).json({ error: 'Error fetching location data' });
@@ -74,13 +74,13 @@ router.post("/location", async (req, res) => {
 })
 
 //Step 2: Find item ID numbers
-router.post("/item", async (req, res) => {
+walmartRouter.post("/item", async (req, res) => {
     let query = req.body.query;
     let url = BASE_URL + `api-proxy/service/affil/product/v2/search?query=${query}`;
-    console.log(url);
+    // console.log(url);
     try {
         let response = await fetchBody(url, headerData);
-        console.log(response);
+        // console.log(response);
         res.json(response);
     } catch (error) {
         res.status(500).json({ error: 'Error fetching itemID data' });
@@ -88,11 +88,11 @@ router.post("/item", async (req, res) => {
 })
 
 //Step 3: Use locations to find specific prices of items
-router.post("/price", async (req, res) => {
+walmartRouter.post("/price", async (req, res) => {
     let itemID = req.body.itemID;
     let location = req.body.location;
     let url = BASE_URL + `api-proxy/service/affil/product/v2/items/${itemID}?storeId=${location}`;
-    console.log(url);
+    // console.log(url);
     try {
         let response = await fetchBody(url, headerData);
         // console.log(response);
@@ -151,7 +151,7 @@ const headerData = {
     keyVer: '1'
 }
 
-module.exports = router; // Ensure this is correct
+module.exports = walmartRouter; // Ensure this is correct
 
 // async function saveProducts() {
 //     try {

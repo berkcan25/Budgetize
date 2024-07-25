@@ -27,6 +27,9 @@ function Budgetize() {
   const [selectedLoc, setSelectedLoc] = useState(null);
 
 
+  //Kroger API
+  const [krogerLocs, setKrogerLocs] = useState(null);
+
 
   //Mapbox API
   const fly = (longitude, latitude) => {
@@ -65,6 +68,29 @@ function Budgetize() {
       console.error('Failed to geocode the address:', error);
     }
   };
+
+ //Kroger API
+
+  //Get Kroger Locations
+  useEffect(() => {
+    const postKrogerLocs = async () => {
+      try {
+        const response = await axios.post(BACKEND_API_URL + 'kroger/getKrogerToken', {
+          scope: "Location"
+        });
+        const responseLocs = await axios.get(BACKEND_API_URL + 'kroger/getKrogerLocs', {
+          locKey: response.data.access_token,
+          latLong: `${location.latitude},${location.longitude}`
+        });
+        setKrogerLocs(response.data)
+        console.log('Location posted successfully:', response.data);
+      } catch (error) {
+        console.error('Error posting location:', error);
+      }
+    }
+    if (location.latitude && location.longitude) {
+      postKrogerLocs();
+    }});
 
   //Walmart API
 
@@ -239,6 +265,16 @@ function Budgetize() {
           </Popup>
         )}
         </Marker>
+          ))}
+          {/* kroger pins */}
+          {krogerLocs && krogerLocs.map((loc) => (
+          <Marker
+            // key={loc.no}
+            color='red'
+            latitude={loc.geolocation.latitude}
+            longitude={loc.geolocation.longitude}
+          >
+          </Marker>
           ))}
             <NavigationControl position="top-right" />
           </Map>

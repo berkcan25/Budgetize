@@ -15,9 +15,17 @@ function Budgetize() {
   const [marker, setMarker] = useState(null);
   const mapRef = useRef(null);
   const BACKEND_API_URL = "http://localhost:9000/"
+
+
+  //Walmart API
   const [walmartLocs, setWalmartLocs] = useState(null);
   const [item, setItem] = useState(null);
   const [itemID, setItemID] = useState(null);
+  const [walmartImage, setWalmartImage] = useState(null);
+  const [walmartName, setWalmartName] = useState(null);
+  const [walmartMSRP, setWalmartMSRP] = useState(null);
+  const [selectedLoc, setSelectedLoc] = useState(null);
+
 
 
   //Mapbox API
@@ -64,7 +72,7 @@ function Budgetize() {
   useEffect(() => {
     const postLocation = async () => {
       try {
-        const response = await axios.post(BACKEND_API_URL +'location', {
+        const response = await axios.post(BACKEND_API_URL +'walmart/location', {
           latitude: location.latitude,
           longitude: location.longitude,
         });
@@ -88,10 +96,12 @@ function Budgetize() {
   const handleItem = async (event) => {
     event.preventDefault();
     try {
-      const response = await axios.post(BACKEND_API_URL +'item', {
+      const response = await axios.post(BACKEND_API_URL +'walmart/item', {
         query: item
       });
       setItemID(response.data.items[0].itemId)
+      setWalmartImage(response.data.items[0].largeImage)
+      setWalmartName(response.data.items[0].name)
       console.log('ItemID posted successfully:', response.data.items[0].itemId);
       getPrices(response.data.items[0].itemId)
     } catch (error) {
@@ -103,7 +113,7 @@ function Budgetize() {
 
     try {
       for (const loc of walmartLocs) {
-        const response = await axios.post(BACKEND_API_URL + 'price', {
+        const response = await axios.post(BACKEND_API_URL + 'walmart/price', {
           itemID: id,
           location: loc.no
         });
@@ -200,20 +210,47 @@ function Budgetize() {
             onLoad={({ target }) => { mapRef.current = target; }}
           >
           {walmartLocs && walmartLocs.map((loc) => (
-          <Marker
-            // key={loc.no}
-            longitude={loc.coordinates[0]}
-            latitude={loc.coordinates[1]}
-          >
-            {loc.salePrice && <div className="bg-white p-2 rounded shadow">
-              {loc.salePrice}
+        <Marker
+          key={loc.no}
+          longitude={loc.coordinates[0]}
+          latitude={loc.coordinates[1]}
+          onClick={() => setSelectedLoc(loc)}
+          style={{ zIndex: 1 }}
+        >
+            {loc.salePrice && 
+            <div className="bg-white p-2 rounded shadow">
+              ${loc.salePrice}
             </div>}
-          </Marker>
+            {selectedLoc && (
+          <Popup
+            longitude={selectedLoc.coordinates[0]}
+            latitude={selectedLoc.coordinates[1]}
+            onClose={() => setSelectedLoc(null)}
+            closeOnClick={false}
+            anchor="top"
+            style={{ zIndex: 50, backgroundColor: 'white', borderRadius: '15px', border: 'none', boxShadow: 'none', padding: '5px'}}
+          >
+            <div>
+              <h2 className="font-bold">{selectedLoc.name}</h2>
+              <p>{selectedLoc.streetAddress.toLowerCase().replace(/\b\w/g, char => char.toUpperCase())}</p>
+              <p>{selectedLoc.city}, {selectedLoc.stateProvCode} {selectedLoc.zip}</p>
+              <p>{selectedLoc.phoneNumber}</p>
+            </div>
+          </Popup>
+        )}
+        </Marker>
           ))}
-          {/* {marker && <Marker longitude={marker.longitude} latitude={marker.latitude}></Marker>} */}
             <NavigationControl position="top-right" />
           </Map>
         </div>
+        {walmartImage && walmartName && (
+          <div className="fixed bottom-0 left-0 m-4 bg-white p-4 rounded shadow z-50">
+          <img src={walmartImage} alt="Walmart" className="w-32 h-32 object-contain mb-2" />
+          <p className="text-gray-800 font-semibold break-words w-32 text-center">
+            {walmartName}
+          </p>
+        </div>
+        )}
       </div>
     </div>
   );

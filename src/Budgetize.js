@@ -217,7 +217,7 @@ function Budgetize() {
           onClick={() => setSelectedLoc(loc)}
           style={{ zIndex: 1 }}
         >
-            {loc.salePrice && 
+            {loc != selectedLoc && loc.salePrice && 
             <div className="bg-white p-2 rounded shadow">
               ${loc.salePrice}
             </div>}
@@ -235,6 +235,7 @@ function Budgetize() {
               <p>{selectedLoc.streetAddress.toLowerCase().replace(/\b\w/g, char => char.toUpperCase())}</p>
               <p>{selectedLoc.city}, {selectedLoc.stateProvCode} {selectedLoc.zip}</p>
               <p>{selectedLoc.phoneNumber}</p>
+              {selectedLoc.salePrice && <p className="italic">Price: {selectedLoc.salePrice}</p>}
             </div>
           </Popup>
         )}

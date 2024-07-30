@@ -17,34 +17,25 @@ function Budgetize() {
   const mapRef = useRef(null);
   const BACKEND_API_URL = "http://localhost:9000/"
 
-
   //Walmart API
   const [walmartLocs, setWalmartLocs] = useState(null);
-  const [item, setItem] = useState(null);
-  const [itemID, setItemID] = useState(null);
+  const [walmartItem, setWalmartItem] = useState(null);
+  const [walmartItemID, setWalmartItemID] = useState(null);
   const [walmartImage, setWalmartImage] = useState([]);
   const [walmartName, setWalmartName] = useState([]);
   const [walmartMSRP, setWalmartMSRP] = useState(null);
-  const [selectedLoc, setSelectedLoc] = useState(null);
+  const [walmartSelectedLoc, setWalmartSelectedLoc] = useState(null);
 
 
   //Kroger API
   const [krogerLocs, setKrogerLocs] = useState(null);
   const [krogerSelectedLoc, setKrogerSelectedLoc] = useState(null);
-
   const [krogerItem, setKrogerItem] = useState(null);
   const [krogerItemID, setKrogerItemID] = useState(null);
-  // const [walmartImage, setWalmartImage] = useState(null);
-  // const [walmartName, setWalmartName] = useState(null);
-  // const [walmartMSRP, setWalmartMSRP] = useState(null);
-  // const [selectedLoc, setSelectedLoc] = useState(null);
-
-
 
   //Mapbox API
   const fly = (longitude, latitude) => {
     if (mapRef.current) {
-      console.log(mapRef.current)
       mapRef.current.flyTo({
         center: [longitude, latitude],
         zoom: 12,
@@ -53,12 +44,13 @@ function Budgetize() {
     }
   };
 
+  //Handlers
   const handleAddressChange = (event) => {
     setAddress(event.target.value);
   };
 
   const handleItemChange = (event) => {
-    setItem(event.target.value);
+    setWalmartItem(event.target.value);
     setKrogerItem(event.target.value);
   };
 
@@ -82,15 +74,15 @@ function Budgetize() {
 
 async function handleItem(event) {
   event.preventDefault();
-  console.log("Ready!")
   await handleKrogerItem();
   await handleWalmartItem();
 }
 
  //Kroger API
 
-  //Get Kroger Locations
-  useEffect(() => {
+ useEffect(() => {
+
+    //Get Kroger Locations
     const postKrogerLocs = async () => {
       try {
         const response = await axios.post(BACKEND_API_URL + 'kroger/getKrogerToken', {
@@ -110,6 +102,7 @@ async function handleItem(event) {
       postKrogerLocs();
     }}, [location.latitude, location.longitude]);
 
+    //Kroger Items
     const handleKrogerItem = async () => {
       try {
         const krogerToken = await axios.post(BACKEND_API_URL + 'kroger/getKrogerToken', {
@@ -117,19 +110,16 @@ async function handleItem(event) {
         });
         const response = await axios.post(BACKEND_API_URL +'kroger/getKrogerItem', {
           key: krogerToken.data.accessToken,
-          item: item
+          item: walmartItem
         });
         setKrogerItemID(response.data[0].productId)
-
-        // setWalmartImage(response.data.items[0].largeImage)
-        // setWalmartName(response.data.items[0].name)
-        // console.log('ItemID posted successfully:', response.data.items[0].itemId);
         getKrogerPrices(response.data[0].productId, krogerToken.data.accessToken) 
       } catch (error) {
         console.error('Error posting ItemID:', error);
       }
     };
 
+    //Kroger Prices
     const getKrogerPrices = async (id, token) => {
       for (const loc of krogerLocs) {
         try {
@@ -138,7 +128,6 @@ async function handleItem(event) {
             key: token,
             locationID: loc.locationId
           });
-          // console.log(response.data[0].items[0].price.regular)
           setKrogerLocs((prevLocs) =>
             prevLocs.map((l) => {
               if (l.locationId === loc.locationId && typeof response.data[0].items[0].price !== 'undefined') {
@@ -152,25 +141,19 @@ async function handleItem(event) {
         console.error('Error fetching prices:', error);
       }
       }
-      // console.log(walmartLocs);
     };
 
   //Walmart API
 
   //Get Walmart locations
   useEffect(() => {
-    const postLocation = async () => {
+    const postWalmartLocation = async () => {
       try {
         const response = await axios.post(BACKEND_API_URL +'walmart/location', {
           latitude: location.latitude,
           longitude: location.longitude,
         });
         setWalmartLocs(response.data)
-        // walmartLocs.map((loc) => {
-        //     console.log(loc.no);
-        //     console.log(loc.coordinates[1]);
-        //     console.log(loc.coordinates[0]);
-        // });
         console.log('Location posted successfully:', response.data);
       } catch (error) {
         console.error('Error posting location:', error);
@@ -178,38 +161,37 @@ async function handleItem(event) {
     };
 
     if (location.latitude && location.longitude) {
-      postLocation();
+      postWalmartLocation();
     }
   }, [location.latitude, location.longitude]);
 
+  //Walmart Items
   const handleWalmartItem = async () => {
     try {
       const response = await axios.post(BACKEND_API_URL +'walmart/item', {
-        query: item
+        query: walmartItem
       });
-      setItemID(response.data.items[0].itemId)
+      setWalmartItemID(response.data.items[0].itemId)
       setWalmartImage(prevItems => [...prevItems, response.data.items[0].largeImage])
       setWalmartName(prevItems => [...prevItems, response.data.items[0].name])
       console.log('ItemID posted successfully:', response.data.items[0].itemId);
-      getPrices(response.data.items[0].itemId)
+      getWalmartPrices(response.data.items[0].itemId)
     } catch (error) {
       console.error('Error posting ItemID:', error);
     }
   };
 
-  const getPrices = async (id) => {
+  //Walmart Prices
+  const getWalmartPrices = async (id) => {
     for (const loc of walmartLocs) {
       try {
         const response = await axios.post(BACKEND_API_URL + 'walmart/price', {
           itemID: id,
           location: loc.no
         });
-        // console.log(loc.name)
-        // console.log(response.data.salePrice); // Handle the response data as needed
         setWalmartLocs((prevLocs) =>
           prevLocs.map((l) => {
             if (l.no === loc.no) {
-              // console.log({ ...l, salePrice: response.data.salePrice });
               return { ...l, salePrice: response.data.salePrice };
             } else {
               return l;
@@ -220,19 +202,20 @@ async function handleItem(event) {
         console.error('Error fetching prices:', error);
       }
     }
-    
-    // console.log(walmartLocs);
   };
 
   return (
     <div className="budgetize h-screen flex flex-col">
       <nav className="bg-gray-800 p-4">
+
         {/* NAV BAR */}
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center">
+            
             <img src={logo} className="h-8 w-8 mr-2" alt="logo" />
             <span className="text-white font-semibold text-xl select-none">Budgetize</span>
           </div>
+
           {/* Address input and geocoding */}
           <form className="flex" onSubmit={handleGeocode}>
             <input
@@ -302,28 +285,28 @@ async function handleItem(event) {
           key={loc.no}
           longitude={loc.coordinates[0]}
           latitude={loc.coordinates[1]}
-          onClick={() => setSelectedLoc(loc)}
+          onClick={() => setWalmartSelectedLoc(loc)}
           style={{ zIndex: 1 }}
         >
-            {loc != selectedLoc && loc.salePrice && 
+            {loc != walmartSelectedLoc && loc.salePrice && 
             <div className="bg-white p-2 rounded shadow">
               ${loc.salePrice}
             </div>}
-            {selectedLoc && (
+            {walmartSelectedLoc && (
           <Popup
-            longitude={selectedLoc.coordinates[0]}
-            latitude={selectedLoc.coordinates[1]}
-            onClose={() => setSelectedLoc(null)}
+            longitude={walmartSelectedLoc.coordinates[0]}
+            latitude={walmartSelectedLoc.coordinates[1]}
+            onClose={() => setWalmartSelectedLoc(null)}
             closeOnClick={false}
             anchor="top"
             style={{ zIndex: 50, backgroundColor: 'white', borderRadius: '15px', border: 'none', boxShadow: 'none', padding: '5px'}}
           >
             <div>
-              <h2 className="font-bold">{selectedLoc.name}</h2>
-              <p>{selectedLoc.streetAddress.toLowerCase().replace(/\b\w/g, char => char.toUpperCase())}</p>
-              <p>{selectedLoc.city}, {selectedLoc.stateProvCode} {selectedLoc.zip}</p>
-              <p>{selectedLoc.phoneNumber}</p>
-              {selectedLoc.salePrice && <p className="italic">Price: {selectedLoc.salePrice}</p>}
+              <h2 className="font-bold">{walmartSelectedLoc.name}</h2>
+              <p>{walmartSelectedLoc.streetAddress.toLowerCase().replace(/\b\w/g, char => char.toUpperCase())}</p>
+              <p>{walmartSelectedLoc.city}, {walmartSelectedLoc.stateProvCode} {walmartSelectedLoc.zip}</p>
+              <p>{walmartSelectedLoc.phoneNumber}</p>
+              {walmartSelectedLoc.salePrice && <p className="italic">Price: {walmartSelectedLoc.salePrice}</p>}
             </div>
           </Popup>
         )}
@@ -358,7 +341,6 @@ async function handleItem(event) {
                 <p>{krogerSelectedLoc.address.addressLine1}</p>
                 <p>{krogerSelectedLoc.address.city}, {krogerSelectedLoc.address.state} {krogerSelectedLoc.address.zipCode}</p>
                 <p>{krogerSelectedLoc.phone}</p>
-                {/* {selectedLoc.salePrice && <p className="italic">Price: {selectedLoc.salePrice}</p>} */}
               </div>
             </Popup> )}
           </Marker>
